@@ -51,6 +51,16 @@ func (r *Repository) FindByUserID(userID uint) ([]Order, error) {
 	return orders, err
 }
 
+// FindAll ดึง order ทั้งหมดในระบบ (สำหรับ admin)
+func (r *Repository) FindAll() ([]Order, error) {
+	var orders []Order
+	err := r.db.
+		Preload("Items.Product").
+		Order("created_at DESC").
+		Find(&orders).Error
+	return orders, err
+}
+
 // UpdateStatus เปลี่ยนสถานะ order
 func (r *Repository) UpdateStatus(id uint, status OrderStatus) error {
 	return r.db.Model(&Order{}).Where("id = ?", id).Update("status", status).Error

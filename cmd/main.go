@@ -28,6 +28,11 @@ func main() {
 	authService := auth.NewService(authRepo)
 	authHandler := auth.NewHandler(authService)
 
+	// Seed admin คนแรกจาก env (idempotent)
+	if err := authService.EnsureAdmin(); err != nil {
+		log.Fatal("EnsureAdmin failed: ", err)
+	}
+
 	// Setup router
 	r := gin.Default()
 

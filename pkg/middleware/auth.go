@@ -57,6 +57,24 @@ func AuthRequired() gin.HandlerFunc {
 		userID := uint(claims["user_id"].(float64))
 		c.Set("user_id", userID)
 
+		// เก็บ role ไว้ใน context ให้ AdminRequired และ handler ใช้ตรวจสิทธิ์
+		if role, ok := claims["role"].(string); ok {
+			c.Set("role", role)
+		}
+
 		c.Next() // ผ่านไป handler ต่อได้
+	}
+}
+
+// AdminRequired อนุญาตเฉพาะ user ที่มี role = admin
+// ต้องใช้ต่อจาก AuthRequired() เสมอ (อาศัย role ที่ AuthRequired set ไว้ใน context)
+func AdminRequired() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetString("role") != "admin" {
+			response.Error(c, http.StatusForbidden, "ต้องมีสิทธิ์ admin เท่านั้น")
+			c.Abort()
+			return
+		}
+		c.Next()
 	}
 }

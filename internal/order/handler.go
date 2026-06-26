@@ -26,6 +26,13 @@ func (h *Handler) RegisterRoutes(r *gin.Engine) {
 		api.GET("/orders/:id", h.GetByID)
 		api.POST("/orders/:id/pay", h.MockPayment)
 	}
+
+	// Admin-only — จัดการ order ทั้งระบบ
+	admin := r.Group("/api/admin").Use(middleware.AuthRequired(), middleware.AdminRequired())
+	{
+		admin.GET("/orders", h.GetAllOrders)
+		admin.PUT("/orders/:id/status", h.UpdateStatus)
+	}
 }
 
 // POST /api/orders/checkout
@@ -94,6 +101,39 @@ func (h *Handler) MockPayment(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "ชำระเงินสำเร็จ", order)
+}
+
+// GET /api/admin/orders — admin ดู order ทั้งหมด
+func (h *Handler) GetAllOrders(c *gin.Context) {
+	orders, err := h.service.GetAllOrders()
+	if err != nil {
+		response.Error(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+	response.Success(c, http.StatusOK, "ดึงข้อมูลออเดอร์ทั้งหมดสำเร็จ", orders)
+}
+
+// PUT /api/admin/orders/:id/status — admin เปลี่ยนสถานะ order
+func (h *Handler) UpdateStatus(c *gin.Context) {
+	orderID, err := parseID(c)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "id ไม่ถูกต้อง")
+		return
+	}
+
+	var req UpdateStatusRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	order, err := h.service.UpdateOrderStatus(orderID, req.Status)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(c, http.StatusOK, "อัปเดตสถานะออเดอร์สำเร็จ", order)
 }
 
 func parseID(c *gin.Context) (uint, error) {

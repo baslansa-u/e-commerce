@@ -20,23 +20,23 @@ func NewHandler(service *Service) *Handler {
 func (h *Handler) RegisterRoutes(r *gin.Engine) {
 	api := r.Group("/api")
 
-	// Public routes — ดูสินค้าได้โดยไม่ต้อง login
+	// Public routes — ดูสินค้า/หมวดหมู่ได้โดยไม่ต้อง login
 	products := api.Group("/products")
 	{
 		products.GET("", h.GetAll)
 		products.GET("/:id", h.GetByID)
 	}
+	api.GET("/categories", h.GetAllCategories)
 
-	// Protected routes — ต้อง login (admin เท่านั้นควรเพิ่ม/ลบสินค้า)
-	protected := api.Group("")
-	protected.Use(middleware.AuthRequired())
+	// Admin-only routes — ต้อง login และเป็น admin เท่านั้น (เพิ่ม/แก้/ลบสินค้า, สร้าง category)
+	admin := api.Group("")
+	admin.Use(middleware.AuthRequired(), middleware.AdminRequired())
 	{
-		protected.POST("/products", h.Create)
-		protected.PUT("/products/:id", h.Update)
-		protected.DELETE("/products/:id", h.Delete)
+		admin.POST("/products", h.Create)
+		admin.PUT("/products/:id", h.Update)
+		admin.DELETE("/products/:id", h.Delete)
 
-		protected.POST("/categories", h.CreateCategory)
-		protected.GET("/categories", h.GetAllCategories)
+		admin.POST("/categories", h.CreateCategory)
 	}
 }
 

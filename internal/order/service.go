@@ -119,6 +119,36 @@ func (s *Service) MockPayment(orderID, userID uint) (*Order, error) {
 	return order, nil
 }
 
+// GetAllOrders ดึง order ทั้งหมดในระบบ (admin เท่านั้น — ไม่มี ownership check)
+func (s *Service) GetAllOrders() ([]Order, error) {
+	return s.repo.FindAll()
+}
+
+// UpdateOrderStatus เปลี่ยนสถานะ order โดย admin ตามกฎ state machine
+func (s *Service) UpdateOrderStatus(orderID uint, next OrderStatus) (*Order, error) {
+	order, err := s.repo.FindByID(orderID)
+	if err != nil {
+		return nil, err
+	}
+	if order == nil {
+		return nil, errors.New("ไม่พบออเดอร์นี้")
+	}
+
+	if order.Status == next {
+		return nil, errors.New("ออเดอร์อยู่ในสถานะนี้อยู่แล้ว")
+	}
+	if !order.Status.CanTransitionTo(next) {
+		return nil, fmt.Errorf("เปลี่ยนสถานะจาก %s เป็น %s ไม่ได้", order.Status, next)
+	}
+
+	if err := s.repo.UpdateStatus(orderID, next); err != nil {
+		return nil, err
+	}
+
+	order.Status = next
+	return order, nil
+}
+
 // itoa แปลง uint เป็น string แบบง่าย
 func itoa(n uint) string {
 	return fmt.Sprintf("%d", n)

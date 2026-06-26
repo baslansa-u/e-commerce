@@ -21,6 +21,11 @@ func (r *Repository) CreateUser(user *User) error {
 	return r.db.Create(user).Error
 }
 
+// UpdateUser บันทึกการเปลี่ยนแปลงของ user ที่มีอยู่แล้ว
+func (r *Repository) UpdateUser(user *User) error {
+	return r.db.Save(user).Error
+}
+
 // FindByEmail ค้นหาผู้ใช้จากอีเมล
 func (r *Repository) FindByEmail(email string) (*User, error) {
 	var user User
